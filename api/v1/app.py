@@ -10,6 +10,7 @@ from flasgger import Swagger
 from models import storage
 import os
 from werkzeug.exceptions import HTTPException
+import main
 
 # Global Flask Application Variable: app
 app = Flask(__name__)
