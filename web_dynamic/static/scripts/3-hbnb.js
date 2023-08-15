@@ -1,56 +1,82 @@
-$(document).ready(function () {
-  // This is the stuff for task 2
-  const amenities = [];
-  const amenitiesName = [];
-  $('li :checkbox').change(function () {
-    if (this.checked) {
-      amenities.push($(this).attr('data-id'));
-      amenitiesName.push($(this).attr('data-name'));
+#!/usr/bin/node
+// Execute only when DOM is loaded
+// Listen for changes on each input checkbox tag:
+// if the checkbox is checked, you must store the Amenity ID in a variable (dictionary or list)
+// if the checkbox is unchecked, you must remove the Amenity ID from the variable
+// update the h4 tag inside the div Amenities with the list of Amenities checked
+
+const api_URL = 'http://' + window.location.hostname + ':5001/api/v1/';
+
+window.onload = function() {
+  // Create empty object to store amenities
+  let checkedAmenities = {};
+
+  // Listen for changes on each input checkbox
+  $('input[type="checkbox"]').on('change', function() {
+    console.log("POP!")
+    console.log($(this).data('id'));
+    let myID = $(this).data('id');
+    let myName = $(this).data('name');
+
+    if ($(this).is(':checked')) {
+      checkedAmenities[myID] = myName;
     } else {
-      amenities.splice($.inArray($(this).attr('data-id'), amenities), 1);
-      amenitiesName.splice($.inArray($(this).attr('data-name'), amenitiesName), 1);
+      if (checkedAmenities[myID]) {
+      delete checkedAmenities[myID];}
     }
-    $('.amenities h4').html(amenitiesName.join(', '));
+
+    let amenitiyList = Object.values(checkedAmenities).join(', ');
+    $('.amenities h4').text(amenitiyList);
   });
-  // This is the stuff for task 3
-  const url = 'http://35f944014d11.7399d2e2.hbtn-cod.io:5001/api/v1/status/';
-  $.get(url, function (data) {
-    if (data.status === 'OK') {
-      $('#api_status').addClass('available');
-    } else {
-      $('#api_status').removeClass('available');
-    }
-  });
-  // Stuff for task 4 goes here
-  $.ajax({
-    url: 'http://35f944014d11.7399d2e2.hbtn-cod.io:5001/api/v1/places_search/',
-    type: 'POST',
-    dataType: 'json',
-    contentType: 'application/json',
-    data: JSON.stringify({}),
-    success: function (data) {
-      for (const place of data) {
-        $.get('http://35f944014d11.7399d2e2.hbtn-cod.io:5001/api/v1/users/' + place.user_id, function (usrData) {
-          const html = `<article>
-              <div class="title_box">
-                <h2>${place.name}</h2>
-                <div class="price_by_night">$${place.price_by_night}</div>
-              </div>
-              <div class="information">
-                <div class="max_guest">${place.max_guest} Guests</div>
-                <div class="number_rooms">${place.number_rooms} Bedrooms</div>
-                <div class="number_bathrooms">${place.number_bathrooms} Bathrooms</div>
-              </div>
-              <div class="user">
-              <b>Owner:</b> ${usrData.first_name} ${usrData.last_name}
-              </div>
-              <div class="description">
-                ${place.description}
-              </div>
-            </article>`;
-          $('.places').append(html);
-        });
+};
+
+//populate Places
+$.ajax({
+  url: api_URL+'places_search/',
+  type: 'POST',
+  data: '{}',
+  contentType: 'application/json',
+  success: function (places) {
+    $.get(api_URL+'users', function(users) {
+      for (const place of places) {
+        let user = users.filter(u => u.id === place.user_id)[0]; 
+
+        $('section.places').append(`<article>
+          <div class="title_box">
+            <h2>${ place.name }</h2>
+            <div class="price_by_night">$${ place.price_by_night }</div>
+          </div>
+          <div class="information">
+            <div class="max_guest">${ place.max_guest } Guest${makePlural(place.max_guest)}</div>
+                  <div class="number_rooms">${ place.number_rooms } Bedroom${makePlural(place.number_rooms)}</div>
+                  <div class="number_bathrooms">${ place.number_bathrooms } Bathroom${makePlural(place.number_bathrooms)}</div>
+          </div>
+          <div class="user">
+                  <b>Owner:</b> ${ user.first_name } ${ user.last_name }
+                </div>
+                <div class="description">
+            ${ place.description }
+                </div>
+        </article>`);
       }
+    });
+  }
+});
+
+// Get status from API. If OK, add Class 'available', if not, remove Class 'available'
+$(function () {
+  $.get(api_URL+'status', function(data) {
+    const apiStatusDiv = $('#api_status');
+    if (data.status === 'OK') {
+      apiStatusDiv.addClass('available');
+    } else {
+      apiStatusDiv.removeClass('available');
     }
   });
 });
+
+function makePlural (value) {
+  if (value === 1)
+    return '';
+  return 's';
+}
